@@ -19,7 +19,7 @@ Upstream docs: [OpenClaw installation](https://openclawdoc.com/docs/getting-star
 |------|---------|
 | `site.yml` | Main play: `common` then `openclaw`. |
 | `group_vars/all.yml` | Example: `ansible_user` for SSH and authorized key placement. |
-| `files/id_rsa.pub` | Public key installed by the `common` role (replace with your key). |
+| `files/id_rsa.pub` | Public key installed by the `common` role (create locally; `files/` is gitignored). |
 | `roles/common/` | Baseline OS packages, chrony, SSH hardening, authorized key. |
 | `roles/openclaw/` | NodeSource Node.js, Docker (optional), `openclaw` system user, npm install, `openclaw-gateway` systemd unit. |
 
@@ -34,7 +34,7 @@ Upstream docs: [OpenClaw installation](https://openclawdoc.com/docs/getting-star
 
 2. **SSH user** — set `ansible_user` in `group_vars/all.yml` or per-host so it matches an account that already exists on the server and may use `sudo`.
 
-3. **Public key** — place the matching **public** key at `files/id_rsa.pub`.
+3. **Public key** — place the matching **public** key at `files/id_rsa.pub` on the machine that runs Ansible (not committed; `files/` is ignored).
 
 4. **Run the play:**
 
@@ -77,7 +77,7 @@ Most knobs live in **`roles/openclaw/defaults/main.yml`**. Override them in `gro
 
 ## Security notes
 
-- Do **not** commit **private** keys. Only the **public** key belongs in `files/`.
+- Do **not** commit **private** keys. The `files/` directory is gitignored; keep keys only on your control machine or supply them via CI secrets.
 - The `common` role disables password SSH; ensure key access works before applying to production hosts.
 - Review `roles/common/tasks/main.yml` SSH block if you need `AllowUsers`, non-default ports, or other policy.
 
