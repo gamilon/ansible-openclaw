@@ -18,15 +18,22 @@
     content: |
       prefix={{ openclaw_npm_prefix }}
 
-- name: Install OpenClaw CLI (npm global, service user)
-  ansible.builtin.command: npm install -g {{ openclaw_npm_package }}@{{ openclaw_npm_version }}
-  become_user: "{{ openclaw_system_user }}"
+# Install as root with --prefix to avoid become_user → unprivileged temp-dir ACL/chmod issues on some hosts.
+- name: Install OpenClaw CLI (npm global under service prefix)
+  ansible.builtin.command: npm install -g --prefix {{ openclaw_npm_prefix }} {{ openclaw_npm_package }}@{{ openclaw_npm_version }}
   environment:
-    HOME: "{{ openclaw_system_user_home }}"
     PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   register: openclaw_npm_install
   changed_when: >-
     'up to date' not in (openclaw_npm_install.stdout | default('') ~ openclaw_npm_install.stderr | default(''))
+
+- name: Ensure OpenClaw npm prefix tree is owned by service user
+  ansible.builtin.file:
+    path: "{{ openclaw_npm_prefix }}"
+    state: directory
+    owner: "{{ openclaw_system_user }}"
+    group: "{{ openclaw_system_user }}"
+    recurse: true
 
 - name: Install systemd unit for OpenClaw gateway
   ansible.builtin.template:
