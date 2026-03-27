@@ -1,0 +1,9 @@
+---
+- name: OpenClaw host setup
+  hosts: all
+  become: true
+  gather_facts: true
+
+  roles:
+    - common
+    - openclaw
