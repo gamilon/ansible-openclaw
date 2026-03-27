@@ -1,0 +1,14 @@
+---
+- name: Ensure OpenClaw service group exists
+  ansible.builtin.group:
+    name: "{{ openclaw_system_user }}"
+    system: true
+
+- name: Ensure OpenClaw system user exists
+  ansible.builtin.user:
+    name: "{{ openclaw_system_user }}"
+    system: true
+    group: "{{ openclaw_system_user }}"
+    shell: /usr/sbin/nologin
+    home: "{{ openclaw_system_user_home }}"
+    create_home: true

@@ -1,0 +1,23 @@
+---
+# Hybrid layout: OpenClaw Gateway on the host (Node.js); agents run in containers (Docker).
+
+- name: Install Node.js stack for OpenClaw gateway (host)
+  ansible.builtin.import_tasks: nodejs.yml
+  tags:
+    - nodejs
+
+- name: Ensure OpenClaw service system user exists
+  ansible.builtin.import_tasks: openclaw_user.yml
+  tags:
+    - users
+
+- name: Install Docker for OpenClaw agents (containers)
+  ansible.builtin.import_tasks: docker.yml
+  when: openclaw_install_docker_for_agents | bool
+  tags:
+    - docker
+
+- name: Install OpenClaw gateway CLI and systemd service
+  ansible.builtin.import_tasks: gateway_service.yml
+  tags:
+    - gateway

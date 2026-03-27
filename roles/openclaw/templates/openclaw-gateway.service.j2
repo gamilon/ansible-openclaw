@@ -1,0 +1,27 @@
+[Unit]
+Description=OpenClaw Gateway (WebSocket server)
+Documentation=https://openclaws.io/docs/cli/gateway
+After=network-online.target{% if openclaw_install_docker_for_agents | bool %} docker.service{% endif %}
+Wants=network-online.target{% if openclaw_install_docker_for_agents | bool %} docker.service{% endif %}
+
+[Service]
+Type=simple
+User={{ openclaw_system_user }}
+Group={{ openclaw_system_user }}
+WorkingDirectory={{ openclaw_system_user_home }}
+Environment=HOME={{ openclaw_system_user_home }}
+Environment=OPENCLAW_NO_RESPAWN=1
+{% for env in openclaw_gateway_service_environment %}
+Environment={{ env }}
+{% endfor %}
+ExecStart={{ openclaw_npm_prefix }}/bin/openclaw gateway run{% if openclaw_gateway_allow_unconfigured | bool %} --allow-unconfigured{% endif %}{% if (openclaw_gateway_extra_args | default('') | trim | length) > 0 %} {{ openclaw_gateway_extra_args | trim }}{% endif %}
+
+Restart=on-failure
+RestartSec=5
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

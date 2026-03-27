@@ -1,0 +1,36 @@
+---
+# OpenClaw requires Node.js 22+; upstream docs recommend 24 when available.
+openclaw_nodejs_major_version: 22
+
+# System account for the OpenClaw Gateway service (must exist before Docker group tasks).
+openclaw_system_user: openclaw
+openclaw_system_user_home: /opt/openclaw
+
+# npm global prefix (OpenClaw CLI under {{ openclaw_npm_prefix }}/bin; defaults to same as home).
+openclaw_npm_prefix: "{{ openclaw_system_user_home }}"
+
+# Hybrid setup: Gateway runs on the host (Node.js above). Agent workloads use Docker.
+# Set false if agents run elsewhere or you install another runtime yourself.
+openclaw_install_docker_for_agents: true
+
+# Apt packages for the container runtime (override if a release lacks docker-compose-v2).
+openclaw_docker_packages:
+  - docker.io
+  - docker-compose-v2
+
+# Users who must run `docker` without sudo (gateway + human admin).
+openclaw_docker_users:
+  - "{{ ansible_user | default('ubuntu') }}"
+  - "{{ openclaw_system_user }}"
+
+# Gateway install via npm as the service user (not root global).
+openclaw_npm_package: openclaw
+openclaw_npm_version: latest
+
+openclaw_gateway_service_name: openclaw-gateway
+# Extra CLI flags for `openclaw gateway run` (e.g. "--port 18789").
+openclaw_gateway_extra_args: ""
+# If true, adds `--allow-unconfigured` (dev only; production should use real config).
+openclaw_gateway_allow_unconfigured: false
+# Extra Environment= lines for the unit ("KEY=value").
+openclaw_gateway_service_environment: []

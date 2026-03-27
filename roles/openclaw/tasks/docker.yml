@@ -1,0 +1,21 @@
+---
+# Docker on the host for OpenClaw agents (containers). Gateway stays on bare Node.js.
+
+- name: Install Docker Engine and related packages (Ubuntu)
+  ansible.builtin.apt:
+    name: "{{ openclaw_docker_packages }}"
+    state: present
+
+- name: Ensure Docker service is running and enabled
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add OpenClaw/docker users to the docker group
+  ansible.builtin.user:
+    name: "{{ item }}"
+    groups: docker
+    append: true
+  loop: "{{ openclaw_docker_users | default([]) }}"
+  when: openclaw_docker_users | default([]) | length > 0

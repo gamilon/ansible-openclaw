@@ -1,0 +1,45 @@
+---
+# Systemd-managed OpenClaw Gateway running as the openclaw system user.
+
+- name: Ensure npm global prefix directory exists
+  ansible.builtin.file:
+    path: "{{ openclaw_npm_prefix }}"
+    state: directory
+    owner: "{{ openclaw_system_user }}"
+    group: "{{ openclaw_system_user }}"
+    mode: "0755"
+
+- name: Configure npm global prefix for OpenClaw user
+  ansible.builtin.copy:
+    dest: "{{ openclaw_system_user_home }}/.npmrc"
+    owner: "{{ openclaw_system_user }}"
+    group: "{{ openclaw_system_user }}"
+    mode: "0600"
+    content: |
+      prefix={{ openclaw_npm_prefix }}
+
+- name: Install OpenClaw CLI (npm global, service user)
+  ansible.builtin.command: npm install -g {{ openclaw_npm_package }}@{{ openclaw_npm_version }}
+  become_user: "{{ openclaw_system_user }}"
+  environment:
+    HOME: "{{ openclaw_system_user_home }}"
+    PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  register: openclaw_npm_install
+  changed_when: >-
+    'up to date' not in (openclaw_npm_install.stdout | default('') ~ openclaw_npm_install.stderr | default(''))
+
+- name: Install systemd unit for OpenClaw gateway
+  ansible.builtin.template:
+    src: openclaw-gateway.service.j2
+    dest: /etc/systemd/system/{{ openclaw_gateway_service_name }}.service
+    mode: "0644"
+  notify:
+    - Reload systemd daemon
+    - Restart openclaw gateway
+
+- name: Enable and start OpenClaw gateway service
+  ansible.builtin.systemd:
+    name: "{{ openclaw_gateway_service_name }}"
+    enabled: true
+    state: started
+    daemon_reload: true
