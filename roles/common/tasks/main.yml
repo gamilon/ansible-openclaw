@@ -1,0 +1,49 @@
+---
+- name: Fail if host is not Ubuntu
+  ansible.builtin.fail:
+    msg: "This playbook currently supports Ubuntu only."
+  when: ansible_facts.distribution != "Ubuntu"
+
+- name: Ensure apt cache is up to date (Ubuntu)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Upgrade installed packages (Ubuntu)
+  ansible.builtin.apt:
+    upgrade: yes
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Ensure chrony is running and enabled
+  ansible.builtin.service:
+    name: chrony
+    state: started
+    enabled: true
+
+- name: Install provided public key for SSH user
+  ansible.builtin.authorized_key:
+    user: "{{ ssh_authorized_user }}"
+    state: present
+    key: "{{ lookup('file', ssh_public_key_path) }}"
+    manage_dir: true
+
+- name: Lock down SSH to key-based auth only
+  ansible.builtin.blockinfile:
+    path: /etc/ssh/sshd_config
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: common role SSH hardening"
+    block: |
+      PubkeyAuthentication yes
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      PermitRootLogin no
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Restart ssh
+
+- name: Verify playbook execution
+  ansible.builtin.debug:
+    msg: "Playbook completed on {{ inventory_hostname }}"

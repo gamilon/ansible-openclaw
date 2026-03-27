@@ -1,0 +1,19 @@
+---
+common_packages:
+  - curl
+  - git
+  - vim-nox
+  - ncat
+  - net-tools
+  - dnsutils
+  - jq
+  - ca-certificates
+  - unzip
+  - lsb-release
+  - bash-completion
+  - chrony
+  - rsync
+  - wget
+
+ssh_authorized_user: "{{ ansible_user | default('ubuntu') }}"
+ssh_public_key_path: "{{ playbook_dir }}/files/id_rsa.pub"
