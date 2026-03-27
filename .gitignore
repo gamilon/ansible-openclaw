@@ -1,0 +1,25 @@
+# Ansible retry files
+*.retry
+
+# Environment files
+.env
+.env.*
+
+# Local playbook files (e.g. SSH public keys); copy or symlink as needed
+files/
+
+# Secrets and vault/password files
+*.vault
+*.vault.yml
+*.vault.yaml
+vault_pass.txt
+.vault_pass.txt
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Editor/OS files
+.DS_Store
+.idea/
+.vscode/
