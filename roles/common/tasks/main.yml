@@ -3,33 +3,66 @@
   ansible.builtin.fail:
     msg: "This playbook currently supports Ubuntu only."
   when: ansible_facts.distribution != "Ubuntu"
+  tags:
+    - always
 
 - name: Ensure apt cache is up to date (Ubuntu)
   ansible.builtin.apt:
     update_cache: true
     cache_valid_time: 3600
+  tags:
+    - apt
 
 - name: Upgrade installed packages (Ubuntu)
   ansible.builtin.apt:
     upgrade: yes
+  tags:
+    - apt
+    - packages
 
 - name: Install common packages
   ansible.builtin.apt:
     name: "{{ common_packages }}"
     state: present
+  tags:
+    - packages
 
 - name: Ensure chrony is running and enabled
   ansible.builtin.service:
     name: chrony
     state: started
     enabled: true
+  tags:
+    - chrony
 
-- name: Install provided public key for SSH user
-  ansible.builtin.authorized_key:
-    user: "{{ ssh_authorized_user }}"
-    state: present
-    key: "{{ lookup('file', ssh_public_key_path) }}"
-    manage_dir: true
+- name: Install SSH public key for admin user
+  tags:
+    - ssh
+  vars:
+    _ssh_pub_key: "{{ lookup('file', ssh_public_key_path) | trim }}"
+  block:
+    - name: Look up home directory for SSH user
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ ssh_authorized_user }}"
+
+    - name: Ensure SSH user has a .ssh directory
+      ansible.builtin.file:
+        path: "{{ ansible_facts.getent_passwd[ssh_authorized_user][4] }}/.ssh"
+        state: directory
+        owner: "{{ ssh_authorized_user }}"
+        group: "{{ ssh_authorized_user }}"
+        mode: "0700"
+
+    - name: Ensure SSH public key is present in authorized_keys
+      ansible.builtin.blockinfile:
+        path: "{{ ansible_facts.getent_passwd[ssh_authorized_user][4] }}/.ssh/authorized_keys"
+        marker: "# {mark} ANSIBLE MANAGED BLOCK: common role ssh pub key"
+        block: "{{ _ssh_pub_key }}"
+        create: true
+        owner: "{{ ssh_authorized_user }}"
+        group: "{{ ssh_authorized_user }}"
+        mode: "0600"
 
 - name: Lock down SSH to key-based auth only
   ansible.builtin.blockinfile:
@@ -43,7 +76,11 @@
       PermitRootLogin no
     validate: /usr/sbin/sshd -t -f %s
   notify: Restart ssh
+  tags:
+    - ssh
 
 - name: Verify playbook execution
   ansible.builtin.debug:
     msg: "Playbook completed on {{ inventory_hostname }}"
+  tags:
+    - debug

@@ -42,6 +42,32 @@ Upstream docs: [OpenClaw installation](https://openclawdoc.com/docs/getting-star
    ansible-playbook -i inventory.ini site.yml
    ```
 
+## Tags
+
+Roles are tagged **`common`** and **`openclaw`**. Finer tags let you run subsets:
+
+| Tag | Role | What runs |
+|-----|------|-----------|
+| `apt` | common | apt cache refresh |
+| `packages` | common | apt upgrade + install `common_packages` |
+| `chrony` | common | chrony service |
+| `ssh` | common | authorized key + sshd hardening |
+| `debug` | common | completion debug task |
+| `nodejs` | openclaw | NodeSource + Node.js |
+| `users` | openclaw | `openclaw` system user |
+| `docker` | openclaw | Docker packages + `docker` group |
+| `gateway` | openclaw | npm install + systemd unit |
+
+The Ubuntu-only check in `common` is tagged **`always`** so it still runs when you use `--tags` (unless you `--skip-tags always`).
+
+Examples:
+
+```bash
+ansible-playbook -i inventory site.yml --tags ssh
+ansible-playbook -i inventory site.yml --tags "gateway,docker"
+ansible-playbook -i inventory site.yml --skip-tags debug
+```
+
 ## What gets installed
 
 ### Role: `common`

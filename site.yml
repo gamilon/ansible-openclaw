@@ -5,5 +5,9 @@
   gather_facts: true
 
   roles:
-    - common
-    - openclaw
+    - role: common
+      tags:
+        - common
+    - role: openclaw
+      tags:
+        - openclaw
