@@ -1,0 +1,7 @@
+# {{ ansible_managed }}
+{% if common_vault_addr | default("") | trim | length > 0 %}
+export VAULT_ADDR={{ common_vault_addr | trim | quote }}
+{% endif %}
+{% if common_vault_manage_ca | default(false) | bool %}
+export VAULT_CACERT={{ common_vault_cacert_remote_path | quote }}
+{% endif %}

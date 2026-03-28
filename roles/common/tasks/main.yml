@@ -35,6 +35,10 @@
   tags:
     - chrony
 
+- name: HashiCorp Vault (CLI and profile.d)
+  ansible.builtin.import_tasks: vault.yml
+  when: common_install_vault_cli | bool
+
 - name: Install SSH public key for admin user
   tags:
     - ssh

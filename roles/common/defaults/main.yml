@@ -17,3 +17,18 @@ common_packages:
 
 ssh_authorized_user: "{{ ansible_user | default('ubuntu') }}"
 ssh_public_key_path: "{{ playbook_dir }}/files/id_rsa.pub"
+
+# HashiCorp Vault CLI + optional profile.d (https://releases.hashicorp.com/vault/). Entire vault.yml skipped when false.
+common_install_vault_cli: false
+common_vault_version: "1.18.5"
+common_vault_install_dir: /usr/local/bin
+
+# Vault CLI client env in profile.d (see common_vault_profile_d_path). Template is installed when
+# common_vault_addr is set and/or common_vault_manage_ca is true.
+common_vault_addr: ""
+# Copy CA PEM from controller and set VAULT_CACERT (path on remote).
+common_vault_manage_ca: false
+common_vault_ca_src: "{{ playbook_dir }}/files/vault_ca.pem"
+common_vault_cacert_remote_path: /etc/vault/vault_ca.pem
+# Ubuntu sources /etc/profile.d/*.sh — use .sh so new logins pick up env.
+common_vault_profile_d_path: /etc/profile.d/vault.sh

@@ -53,7 +53,8 @@ Roles are tagged **`common`** and **`openclaw`**. Finer tags let you run subsets
 | `chrony` | common | chrony service |
 | `ssh` | common | authorized key + sshd hardening |
 | `debug` | common | completion debug task |
-| `vault` | common | HashiCorp Vault CLI zip from releases.hashicorp.com (needs `common_install_vault_cli: true`) |
+| `vault` | common | Vault CLI zip install + version display (when `common_install_vault_cli`) |
+| `vault_profile` | common | Subset: only `/etc/profile.d/vault.sh` (`VAULT_ADDR`); still requires `common_install_vault_cli` so the import runs |
 | `nodejs` | openclaw | NodeSource + Node.js |
 | `users` | openclaw | `openclaw` system user |
 | `docker` | openclaw | Docker packages + `docker` group |
@@ -78,7 +79,7 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 - **chrony** (default distro config).
 - Your key in `~/.ssh/authorized_keys` for `{{ ansible_user | default('ubuntu') }}`.
 - SSH hardening block: key-based auth only, `PermitRootLogin no`.
-- **Vault CLI** (optional): if `common_install_vault_cli` is `true`, downloads `vault_{{ common_vault_version }}_linux_{amd64|arm64}.zip` from [releases.hashicorp.com](https://releases.hashicorp.com/vault/) and installs the binary to `common_vault_install_dir` (default `/usr/local/bin`).
+- **Vault** (optional): if `common_install_vault_cli` is `true`, installs the CLI from [releases.hashicorp.com](https://releases.hashicorp.com/vault/), optionally copies **`common_vault_ca_src`** (default `files/vault_ca.pem` on the controller) to **`common_vault_cacert_remote_path`**, and manages **`common_vault_profile_d_path`** with `VAULT_ADDR` and/or `VAULT_CACERT` when configured (see defaults). If `common_install_vault_cli` is `false`, no Vault tasks run.
 
 ### Role: `openclaw`
 
@@ -92,10 +93,15 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 
 **Common role** (`roles/common/defaults/main.yml`):
 
-- `common_install_vault_cli` — set `true` to install the Vault CLI from HashiCorp releases (default `false`).
+- `common_install_vault_cli` — set `true` to run all Vault tasks: CLI install from HashiCorp releases, optional CA copy, and profile.d when `common_vault_addr` and/or `common_vault_manage_ca` is set (default `false`).
 - `common_vault_version` — release version string, e.g. `1.18.5` (must match a published zip on releases.hashicorp.com).
 - `common_vault_install_dir` — directory for the `vault` binary (default `/usr/local/bin`).
 - Zip suffix (`linux_amd64` vs `linux_arm64`) is derived from the gathered fact **`ansible_architecture`** (`x86_64` / `aarch64`).
+- `common_vault_addr` — Vault server URL (e.g. `https://vault.example.com:8200`). Non-empty adds **`VAULT_ADDR`** to profile.d.
+- `common_vault_manage_ca` — set `true` to copy **`common_vault_ca_src`** to **`common_vault_cacert_remote_path`** and add **`VAULT_CACERT`** to profile.d.
+- `common_vault_ca_src` — PEM on the Ansible controller (default `{{ playbook_dir }}/files/vault_ca.pem`).
+- `common_vault_cacert_remote_path` — PEM path on the target (default `/etc/vault/vault_ca.pem`).
+- `common_vault_profile_d_path` — profile.d script (default `/etc/profile.d/vault.sh`; keep the **`.sh`** suffix on Ubuntu). The file is removed when both `common_vault_addr` is empty and `common_vault_manage_ca` is `false`.
 
 **OpenClaw role** — most knobs live in **`roles/openclaw/defaults/main.yml`**. Override them in `group_vars/` or `host_vars/` as needed, for example:
 

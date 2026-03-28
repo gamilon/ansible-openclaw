@@ -1,0 +1,130 @@
+---
+# HashiCorp Vault CLI + optional profile.d (VAULT_ADDR, VAULT_CACERT). Gated by common_install_vault_cli on import.
+
+- name: Vault CLI from HashiCorp releases
+  tags:
+    - vault
+  block:
+    # HashiCorp zips use linux_amd64 / linux_arm64; ansible_architecture is typically x86_64 / aarch64.
+    - name: Set Vault zip architecture from ansible_architecture (gathered facts)
+      ansible.builtin.set_fact:
+        common_vault_zip_arch: >-
+          {{ 'amd64' if ansible_architecture == 'x86_64'
+          else 'arm64' if ansible_architecture == 'aarch64'
+          else '' }}
+
+    - name: Require supported CPU architecture for Vault CLI binary
+      ansible.builtin.assert:
+        that:
+          - common_vault_zip_arch | length > 0
+        fail_msg: >-
+          Vault CLI install needs ansible_architecture x86_64 or aarch64 (linux_amd64 or linux_arm64 zips);
+          this host reports ansible_architecture={{ ansible_architecture }}.
+
+    - name: Ensure unzip is available for Vault archive
+      ansible.builtin.apt:
+        name: unzip
+        state: present
+
+    - name: Check installed Vault CLI version
+      ansible.builtin.command: "{{ common_vault_install_dir }}/vault version"
+      register: common_vault_version_check
+      changed_when: false
+      failed_when: false
+
+    - name: Install HashiCorp Vault CLI from releases.hashicorp.com
+      when: common_vault_version not in (common_vault_version_check.stdout | default(''))
+      block:
+        - name: Download Vault {{ common_vault_version }} zip
+          ansible.builtin.get_url:
+            url: >-
+              https://releases.hashicorp.com/vault/{{ common_vault_version }}/vault_{{ common_vault_version }}_linux_{{ common_vault_zip_arch }}.zip
+            dest: "/tmp/vault_{{ common_vault_version }}_linux_{{ common_vault_zip_arch }}.zip"
+            mode: "0644"
+
+        - name: Create temporary unpack directory for Vault
+          ansible.builtin.file:
+            path: "/tmp/vault-unpack-{{ common_vault_version }}"
+            state: directory
+            mode: "0755"
+
+        - name: Unpack Vault archive
+          ansible.builtin.unarchive:
+            src: "/tmp/vault_{{ common_vault_version }}_linux_{{ common_vault_zip_arch }}.zip"
+            dest: "/tmp/vault-unpack-{{ common_vault_version }}"
+            remote_src: true
+
+        - name: Install vault binary to {{ common_vault_install_dir }}
+          ansible.builtin.copy:
+            src: "/tmp/vault-unpack-{{ common_vault_version }}/vault"
+            dest: "{{ common_vault_install_dir }}/vault"
+            mode: "0755"
+            remote_src: true
+
+        - name: Remove Vault unpack directory
+          ansible.builtin.file:
+            path: "/tmp/vault-unpack-{{ common_vault_version }}"
+            state: absent
+
+        - name: Remove Vault zip from /tmp
+          ansible.builtin.file:
+            path: "/tmp/vault_{{ common_vault_version }}_linux_{{ common_vault_zip_arch }}.zip"
+            state: absent
+
+    - name: Show Vault version
+      ansible.builtin.command: "{{ common_vault_install_dir }}/vault version"
+      register: common_vault_version_display
+      changed_when: false
+
+    - name: Display Vault version
+      ansible.builtin.debug:
+        msg: "{{ common_vault_version_display.stdout_lines | default([]) }}"
+
+- name: Ensure Vault CA certificate directory exists on remote
+  ansible.builtin.file:
+    path: "{{ common_vault_cacert_remote_path | dirname }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: common_vault_manage_ca | bool
+  tags:
+    - vault
+    - vault_profile
+
+- name: Copy Vault CA certificate to remote host
+  ansible.builtin.copy:
+    src: "{{ common_vault_ca_src }}"
+    dest: "{{ common_vault_cacert_remote_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: common_vault_manage_ca | bool
+  tags:
+    - vault
+    - vault_profile
+
+- name: Install Vault client environment for login shells
+  ansible.builtin.template:
+    src: vault.sh.j2
+    dest: "{{ common_vault_profile_d_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when: >-
+    (common_vault_addr | default("") | trim | length > 0)
+    or (common_vault_manage_ca | bool)
+  tags:
+    - vault
+    - vault_profile
+
+- name: Remove Vault client profile.d snippet when no Vault client env is configured
+  ansible.builtin.file:
+    path: "{{ common_vault_profile_d_path }}"
+    state: absent
+  when: >-
+    (common_vault_addr | default("") | trim | length == 0)
+    and not (common_vault_manage_ca | bool)
+  tags:
+    - vault
+    - vault_profile
