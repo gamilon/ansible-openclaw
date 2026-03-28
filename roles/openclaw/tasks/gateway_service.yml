@@ -19,13 +19,48 @@
       prefix={{ openclaw_npm_prefix }}
 
 # Install as root with --prefix to avoid become_user → unprivileged temp-dir ACL/chmod issues on some hosts.
+- name: Check for OpenClaw CLI binary
+  ansible.builtin.stat:
+    path: "{{ openclaw_npm_prefix }}/bin/openclaw"
+  register: openclaw_cli_bin
+
+- name: Read installed OpenClaw package version (for pinned npm versions)
+  ansible.builtin.slurp:
+    src: "{{ openclaw_npm_prefix }}/lib/node_modules/{{ openclaw_npm_package }}/package.json"
+  register: openclaw_npm_package_json
+  when:
+    - openclaw_cli_bin.stat.exists | default(false)
+    - openclaw_npm_version != "latest"
+    - not (openclaw_npm_install_force | default(false) | bool)
+  failed_when: false
+
+- name: Decide whether OpenClaw npm install is needed
+  ansible.builtin.set_fact:
+    openclaw_npm_install_needed: >-
+      {{
+        (openclaw_npm_install_force | default(false) | bool)
+        or (not (openclaw_cli_bin.stat.exists | default(false)))
+        or (
+          openclaw_npm_version != "latest"
+          and (
+            (openclaw_npm_package_json.skipped | default(false))
+            or (openclaw_npm_package_json.failed | default(false))
+            or (openclaw_npm_package_json.content is not defined)
+            or (
+              (openclaw_npm_package_json.content | b64decode | from_json).version | default("")
+              != openclaw_npm_version
+            )
+          )
+        )
+      }}
+
 - name: Install OpenClaw CLI (npm global under service prefix)
   ansible.builtin.command: npm install -g --prefix {{ openclaw_npm_prefix }} {{ openclaw_npm_package }}@{{ openclaw_npm_version }}
   environment:
     PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
   register: openclaw_npm_install
-  changed_when: >-
-    'up to date' not in (openclaw_npm_install.stdout | default('') ~ openclaw_npm_install.stderr | default(''))
+  when: openclaw_npm_install_needed | bool
+  changed_when: true
 
 - name: Ensure OpenClaw npm prefix tree is owned by service user
   ansible.builtin.file:
@@ -34,6 +69,7 @@
     owner: "{{ openclaw_system_user }}"
     group: "{{ openclaw_system_user }}"
     recurse: true
+  when: openclaw_npm_install_needed | bool
 
 - name: Install systemd unit for OpenClaw gateway
   ansible.builtin.template:

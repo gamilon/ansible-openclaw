@@ -26,6 +26,8 @@ openclaw_docker_users:
 # Gateway install via npm as the service user (not root global).
 openclaw_npm_package: openclaw
 openclaw_npm_version: latest
+# Skip npm install on later runs when CLI exists (latest) or version matches (pinned). Set true to reinstall/upgrade.
+openclaw_npm_install_force: false
 
 openclaw_gateway_service_name: openclaw-gateway
 # Extra CLI flags for `openclaw gateway run` (e.g. "--port 18789").
