@@ -71,6 +71,22 @@
     recurse: true
   when: openclaw_npm_install_needed | bool
 
+# Real binary lives under {{ openclaw_npm_prefix }}/bin (not on default PATH).
+- name: Confirm OpenClaw CLI binary exists for PATH symlink
+  ansible.builtin.stat:
+    path: "{{ openclaw_npm_prefix }}/bin/openclaw"
+  register: openclaw_cli_bin_path_check
+
+- name: Symlink openclaw CLI into default PATH
+  ansible.builtin.file:
+    src: "{{ openclaw_npm_prefix }}/bin/openclaw"
+    dest: "{{ openclaw_cli_symlink }}"
+    state: link
+    force: true
+  when:
+    - openclaw_link_cli_in_path | bool
+    - openclaw_cli_bin_path_check.stat.exists | default(false)
+
 - name: Install systemd unit for OpenClaw gateway
   ansible.builtin.template:
     src: openclaw-gateway.service.j2

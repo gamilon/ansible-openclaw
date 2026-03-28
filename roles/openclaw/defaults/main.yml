@@ -29,6 +29,10 @@ openclaw_npm_version: latest
 # Skip npm install on later runs when CLI exists (latest) or version matches (pinned). Set true to reinstall/upgrade.
 openclaw_npm_install_force: false
 
+# Symlink npm-installed CLI into a directory on default PATH (root, openclaw, and normal logins).
+openclaw_link_cli_in_path: true
+openclaw_cli_symlink: /usr/local/bin/openclaw
+
 openclaw_gateway_service_name: openclaw-gateway
 # Extra CLI flags for `openclaw gateway run` (e.g. "--port 18789").
 openclaw_gateway_extra_args: ""

@@ -85,7 +85,7 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 
 - **Node.js** via [NodeSource](https://github.com/nodesource/distributions) (`openclaw_nodejs_major_version`, default `22`).
 - System user **`openclaw`** with home **`/opt/openclaw`**.
-- **npm** global install of the `openclaw` package under **`openclaw_npm_prefix`** (defaults to `/opt/openclaw` → CLI at `/opt/openclaw/bin/openclaw`).
+- **npm** global install of the `openclaw` package under **`openclaw_npm_prefix`** (defaults to `/opt/openclaw` → real binary at `/opt/openclaw/bin/openclaw`). A symlink **`openclaw_cli_symlink`** (default `/usr/local/bin/openclaw`) is created so `openclaw` is on the normal PATH for root and other users (disable with **`openclaw_link_cli_in_path: false`**).
 - **systemd** unit **`openclaw-gateway.service`**: runs `openclaw gateway run` as `openclaw`, with `OPENCLAW_NO_RESPAWN=1`.
 - **Docker** (optional): `docker.io` + `docker-compose-v2`; users in `openclaw_docker_users` are added to the `docker` group (includes `ansible_user` and `openclaw` by default).
 
@@ -110,6 +110,7 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 - `openclaw_gateway_allow_unconfigured` — dev-only; adds `--allow-unconfigured`. For production, configure `gateway.mode` and auth under `/opt/openclaw/.openclaw/` (or run onboarding as the `openclaw` user).
 - `openclaw_gateway_service_environment` — list of `KEY=value` strings for extra `Environment=` lines in the unit.
 - `openclaw_npm_install_force` — set `true` to always run `npm install` for the gateway CLI (default skips when `openclaw` already exists under `openclaw_npm_version: latest`, or when a pinned version already matches `package.json`).
+- `openclaw_link_cli_in_path` / `openclaw_cli_symlink` — symlink the CLI into a directory on default `PATH` (defaults: `true`, `/usr/local/bin/openclaw`).
 
 ## After the first run
 
