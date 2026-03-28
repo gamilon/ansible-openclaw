@@ -53,6 +53,7 @@ Roles are tagged **`common`** and **`openclaw`**. Finer tags let you run subsets
 | `chrony` | common | chrony service |
 | `ssh` | common | authorized key + sshd hardening |
 | `debug` | common | completion debug task |
+| `vault` | common | HashiCorp Vault CLI zip from releases.hashicorp.com (needs `common_install_vault_cli: true`) |
 | `nodejs` | openclaw | NodeSource + Node.js |
 | `users` | openclaw | `openclaw` system user |
 | `docker` | openclaw | Docker packages + `docker` group |
@@ -77,6 +78,7 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 - **chrony** (default distro config).
 - Your key in `~/.ssh/authorized_keys` for `{{ ansible_user | default('ubuntu') }}`.
 - SSH hardening block: key-based auth only, `PermitRootLogin no`.
+- **Vault CLI** (optional): if `common_install_vault_cli` is `true`, downloads `vault_{{ common_vault_version }}_linux_{amd64|arm64}.zip` from [releases.hashicorp.com](https://releases.hashicorp.com/vault/) and installs the binary to `common_vault_install_dir` (default `/usr/local/bin`).
 
 ### Role: `openclaw`
 
@@ -88,12 +90,20 @@ ansible-playbook -i inventory site.yml --skip-tags debug
 
 ## Configuration
 
-Most knobs live in **`roles/openclaw/defaults/main.yml`**. Override them in `group_vars/` or `host_vars/` as needed, for example:
+**Common role** (`roles/common/defaults/main.yml`):
+
+- `common_install_vault_cli` — set `true` to install the Vault CLI from HashiCorp releases (default `false`).
+- `common_vault_version` — release version string, e.g. `1.18.5` (must match a published zip on releases.hashicorp.com).
+- `common_vault_install_dir` — directory for the `vault` binary (default `/usr/local/bin`).
+- Zip suffix (`linux_amd64` vs `linux_arm64`) is derived from the gathered fact **`ansible_architecture`** (`x86_64` / `aarch64`).
+
+**OpenClaw role** — most knobs live in **`roles/openclaw/defaults/main.yml`**. Override them in `group_vars/` or `host_vars/` as needed, for example:
 
 - `openclaw_install_docker_for_agents` — set `false` if this host does not run Docker-based agents.
 - `openclaw_gateway_extra_args` — extra flags for `openclaw gateway run` (e.g. port).
 - `openclaw_gateway_allow_unconfigured` — dev-only; adds `--allow-unconfigured`. For production, configure `gateway.mode` and auth under `/opt/openclaw/.openclaw/` (or run onboarding as the `openclaw` user).
 - `openclaw_gateway_service_environment` — list of `KEY=value` strings for extra `Environment=` lines in the unit.
+- `openclaw_npm_install_force` — set `true` to always run `npm install` for the gateway CLI (default skips when `openclaw` already exists under `openclaw_npm_version: latest`, or when a pinned version already matches `package.json`).
 
 ## After the first run
 
