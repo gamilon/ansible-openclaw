@@ -34,9 +34,30 @@ openclaw_link_cli_in_path: true
 openclaw_cli_symlink: /usr/local/bin/openclaw
 
 openclaw_gateway_service_name: openclaw-gateway
+# systemd: until real config exists under {{ openclaw_system_user_home }}, use enabled: false and state: stopped to avoid a flapping unit.
+openclaw_gateway_service_enabled: true
+openclaw_gateway_service_state: started
 # Extra CLI flags for `openclaw gateway run` (e.g. "--port 18789").
 openclaw_gateway_extra_args: ""
 # If true, adds `--allow-unconfigured` (dev only; production should use real config).
 openclaw_gateway_allow_unconfigured: false
 # Extra Environment= lines for the unit ("KEY=value").
 openclaw_gateway_service_environment: []
+
+# --- openclaw onboard (non-interactive) ---
+# https://openclaws.io/docs/cli/onboard — set true and supply extra_argv (+ environment for API keys in ref mode).
+openclaw_onboard_enabled: false
+openclaw_onboard_workspace: "{{ openclaw_system_user_home }}/.openclaw"
+# Gateway unit is not running during this play by default; skip health wait (see upstream CLI automation docs).
+openclaw_onboard_skip_health: true
+openclaw_onboard_skip_skills: false
+openclaw_onboard_accept_risk: false
+openclaw_onboard_json: false
+# Tokens after `openclaw onboard`, e.g. [--mode, local, --auth-choice, openai-api-key, --secret-input-mode, ref]
+openclaw_onboard_extra_argv: []
+# Merged with HOME for the onboard process (use for OPENAI_API_KEY, OPENCLAW_GATEWAY_TOKEN, etc.).
+openclaw_onboard_environment: {}
+# If set, skip onboard when this path already exists (idempotency). Leave empty to run every time onboard is enabled.
+openclaw_onboard_creates: ""
+# Hide argv/env in logs when true (recommended if environment contains secrets).
+openclaw_onboard_no_log: true

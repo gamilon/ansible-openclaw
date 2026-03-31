@@ -87,6 +87,13 @@
     - openclaw_link_cli_in_path | bool
     - openclaw_cli_bin_path_check.stat.exists | default(false)
 
+- name: Non-interactive openclaw onboard (optional)
+  ansible.builtin.import_tasks: onboard.yml
+  when: openclaw_onboard_enabled | bool
+  tags:
+    - onboard
+    - gateway
+
 - name: Install systemd unit for OpenClaw gateway
   ansible.builtin.template:
     src: openclaw-gateway.service.j2
@@ -96,9 +103,9 @@
     - Reload systemd daemon
     - Restart openclaw gateway
 
-- name: Enable and start OpenClaw gateway service
+- name: Set OpenClaw gateway service enabled / running state
   ansible.builtin.systemd:
     name: "{{ openclaw_gateway_service_name }}"
-    enabled: true
-    state: started
+    enabled: "{{ openclaw_gateway_service_enabled | bool }}"
+    state: "{{ openclaw_gateway_service_state }}"
     daemon_reload: true

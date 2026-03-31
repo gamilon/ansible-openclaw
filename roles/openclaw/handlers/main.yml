@@ -7,3 +7,4 @@
   ansible.builtin.systemd:
     name: "{{ openclaw_gateway_service_name }}"
     state: restarted
+  when: openclaw_gateway_service_state | default('started') == 'started'

@@ -1,0 +1,25 @@
+---
+# Non-interactive `openclaw onboard` (https://openclaws.io/docs/cli/onboard).
+# Runs as the service user after the CLI is installed; default --skip-health because the systemd gateway is not up yet.
+
+- name: Build openclaw onboard argv
+  ansible.builtin.set_fact:
+    openclaw_onboard_argv_final: >-
+      {{
+        [openclaw_npm_prefix + '/bin/openclaw', 'onboard', '--non-interactive', '--workspace', openclaw_onboard_workspace]
+        + (['--skip-health'] if openclaw_onboard_skip_health | bool else [])
+        + (['--skip-skills'] if openclaw_onboard_skip_skills | bool else [])
+        + (['--accept-risk'] if openclaw_onboard_accept_risk | bool else [])
+        + (['--json'] if openclaw_onboard_json | bool else [])
+        + (openclaw_onboard_extra_argv | default([]))
+      }}
+
+- name: Run openclaw onboard (non-interactive)
+  ansible.builtin.command:
+    argv: "{{ openclaw_onboard_argv_final }}"
+    creates: "{{ omit if (openclaw_onboard_creates | default('') | trim | length == 0) else openclaw_onboard_creates }}"
+  environment: "{{ {'HOME': openclaw_system_user_home} | combine(openclaw_onboard_environment | default({})) }}"
+  become: true
+  become_user: "{{ openclaw_system_user }}"
+  no_log: "{{ openclaw_onboard_no_log | bool }}"
+  notify: Restart openclaw gateway
