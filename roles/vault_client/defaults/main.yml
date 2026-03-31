@@ -1,0 +1,17 @@
+---
+# HashiCorp Vault CLI + optional profile.d (https://releases.hashicorp.com/vault/).
+# Entire role is skipped in site.yml when vault_client_install_cli is false.
+
+vault_client_install_cli: false
+vault_client_version: "1.18.5"
+vault_client_install_dir: /usr/local/bin
+
+# Vault CLI client env in profile.d (see vault_client_profile_d_path). Template is installed when
+# vault_client_addr is set and/or vault_client_manage_ca is true.
+vault_client_addr: ""
+# Copy CA PEM from controller and set VAULT_CACERT (path on remote).
+vault_client_manage_ca: false
+vault_client_ca_src: "{{ playbook_dir }}/files/vault_ca.pem"
+vault_client_cacert_remote_path: /etc/vault/vault_ca.pem
+# Ubuntu sources /etc/profile.d/*.sh — use .sh so new logins pick up env.
+vault_client_profile_d_path: /etc/profile.d/vault.sh
