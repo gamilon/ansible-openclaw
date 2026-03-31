@@ -8,6 +8,11 @@
     - role: common
       tags:
         - common
+    - role: vault_client
+      tags:
+        - vault_client
+        - vault
+      when: vault_client_install_cli | default(false) | bool
     - role: openclaw
       tags:
         - openclaw
